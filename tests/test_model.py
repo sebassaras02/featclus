@@ -1,4 +1,5 @@
 from featclus.model import FeatureSelection
+from featclus.data_processing import DataShifter
 from sklearn.pipeline import Pipeline
 
 import pandas as pd
@@ -29,17 +30,22 @@ class TestFeatureSelection:
         """
         This test is created to test the functionality of shifting a column in pandas.
         """
-        model = FeatureSelection(data=data_dummy, shifts=[5])
-        shifted_data = model._shift_data_sc(df=data_dummy, target_column="feature_0")[0]
+        model = DataShifter()
+        shifted_data = model.shifts_single_column(
+            df=data_dummy, target_column="feature_0", shifts=[5]
+        )[0]
         assert len(shifted_data) == len(data_dummy) - 5
 
     def test_shift_df_columns(self, data_dummy):
         """
         This test is created to test the functionality of shifting all columns in a dataframe.
         """
-        model = FeatureSelection(data=data_dummy, shifts=[5])
-        result = model._shift_data_mc()
-        expected_number_of_shifts = len(data_dummy.columns) * len(model.shifts)
+        model = DataShifter()
+        shifts = [5, 10]
+        result = model.shift_multiple_columns(
+            df=data_dummy, shifts=shifts, columns=data_dummy.columns
+        )
+        expected_number_of_shifts = len(data_dummy.columns) * len(shifts)
         assert len(result) == expected_number_of_shifts
 
     def test_scoring_normal(self, data_dummy):

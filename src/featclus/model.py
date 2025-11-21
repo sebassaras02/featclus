@@ -1,8 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from typing import List
-from copy import deepcopy
+from typing import List, Dict
 
 from sklearn.cluster import DBSCAN
 from sklearn.preprocessing import MinMaxScaler
@@ -10,10 +9,11 @@ from sklearn.decomposition import PCA
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import silhouette_score
 
-from joblib import Parallel, delayed
-
-import plotly.express as px
 import gower
+
+from .data_processing import DataShifter
+from .plots import ImportancePlotter
+from .parallelizer import FunctionParallizer
 
 
 class FeatureSelection:
@@ -41,7 +41,7 @@ class FeatureSelection:
         self,
         data: pd.DataFrame,
         shifts: List = [5, 10, 50],
-        n_jobs: int = 1,
+        n_jobs: int = -1,
         model: Pipeline = Pipeline(
             steps=[
                 ("scaler", MinMaxScaler()),
@@ -60,72 +60,35 @@ class FeatureSelection:
         self.cache_history = 0
         self.results = None
 
-    def _shift_data_sc(
-        self, df: pd.DataFrame, target_column: str
-    ) -> List[pd.DataFrame]:
+        self.data_shifter = DataShifter()
+        self.plotter = ImportancePlotter()
+        self.parallelizer = FunctionParallizer(n_jobs=n_jobs)
+
+    def _get_permutation_scores(
+        self, df: pd.DataFrame, columns: List, shifts: List
+    ) -> Dict:
         """
-        Creates shifted versions of the dataset for a single column.
+        Calculates the silhouette scores for multiple shifted columns in parallel.
 
         Args:
             df (pd.DataFrame): Input dataframe.
-            target_column (str): Column to apply the shift on.
-
-        Returns:
-            List[pd.DataFrame]: List of shifted dataframes.
-        """
-        data_shifted = []
-        for value in self.shifts:
-            df1 = deepcopy(df)
-            df1[target_column] = df1[target_column].shift(value)
-            df1 = df1.dropna()
-            data_shifted.append(df1)
-        return data_shifted
-
-    def _shift_data_mc(self) -> pd.DataFrame:
-        """
-        Generates shifted datasets for all columns, used for multiprocessing.
-
-        Returns:
-            List[Tuple[str, pd.DataFrame]]: List of tuples containing
-            the column name and its corresponding shifted dataframe.
-        """
-        data_shifted = []
-        for col in self.columns:
-            for value in self.shifts:
-                df1 = deepcopy(self.data)
-                df1[col] = df1[col].shift(value)
-                df1 = df1.dropna()
-                data_shifted.append(
-                    (col, df1)
-                )  # Almacena la columna junto con el DataFrame
-        return data_shifted
-
-    def _train_model(self) -> dict:
-        """
-        Trains the model for each column and computes a silhouette score
-        for each shifted version.
+            columns (List): List of columns to shift.
+            shifts (List): List of shifts to apply.
 
         Returns:
             dict: Dictionary mapping each column to its average silhouette score.
         """
-        if self.n_jobs == 1:
-            scores = {}
-            for col in self.columns:
-                df_to_test = self._shift_data_sc(df=self.data, target_column=col)
-                values = []
-                for df in df_to_test:
-                    values.append(self._get_score(df=df))
-                scores[col] = np.mean(values)
-            return scores
-        else:
-            dataframes = self._shift_data_mc()
-            results = Parallel(n_jobs=self.n_jobs)(
-                delayed(self._get_score)(df) for _, df in dataframes
-            )
-            scores = {col: [] for col in self.columns}
-            for (col, _), score in zip(dataframes, results):
-                scores[col].append(score)
-            return {col: np.mean(scores[col]) for col in scores}
+        dataframes = self.data_shifter.shift_multiple_columns(
+            df=df, columns=columns, shifts=shifts
+        )
+        results = self.parallelizer.handle(
+            func=self._get_score,
+            iterable=[df for _, df in dataframes],
+        )
+        scores = {col: [] for col in self.columns}
+        for (col, _), score in zip(dataframes, results):
+            scores[col].append(score)
+        return {col: np.mean(scores[col]) for col in scores}
 
     def _get_score(self, df) -> float:
         """
@@ -152,7 +115,9 @@ class FeatureSelection:
         Returns:
             pd.DataFrame: Sorted DataFrame of feature importance scores.
         """
-        scores_shifted = self._train_model()
+        scores_shifted = self._get_permutation_scores(
+            df=self.data, columns=self.columns, shifts=self.shifts
+        )
         original_score = self._get_score(df=self.data)
         final_values = {}
         for key, value in scores_shifted.items():
@@ -164,29 +129,13 @@ class FeatureSelection:
         self.results = df
         return df
 
-    def plot_results(self, n_features=None):
+    def plot_results(self, n_features: int = 3):
         """
-        Plots the feature importance results.
+        Plots the feature importance metrics.
 
         Args:
-            n_features (int, optional): Number of top features to plot. Defaults to None.
-
-        Returns:
-            None: Displays a Plotly bar chart.
+            n_features (int): Number of top features to plot. Default is 3.
         """
         if self.cache_history == 0:
             self.get_metrics()
-        data = self.results
-        if n_features:
-            data = data[:n_features]
-        fig = px.bar(
-            data,
-            y="Importance",
-            labels={"Importance": "Importance Score", "index": "Features tested"},
-            title="Feature Importance Plot",
-            color="Importance",
-            color_continuous_scale="Blues",
-        )
-        fig.update_traces(marker_line_color="black", marker_line_width=1.5)
-        fig.update_traces(hovertemplate="<b>%{y:.4f}</b><extra></extra>")
-        fig.show()
+        self.plotter.plot_metrics(df=self.results, n_features=n_features)
