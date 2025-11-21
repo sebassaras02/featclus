@@ -34,8 +34,9 @@ pip install featclus
 Here is a quick example of how to use **FeatureClus** with a clustering algorithm (e.g., KMeans):
 
 ```python
-from featureclus import FeatureSelection
+from featureclus.model import FeatureSelection
 from sklearn.datasets import make_blobs
+import pandas as pd
 
 # Sample DataFrame
 data, labels = make_blobs(n_samples=10000, centers=7, n_features=15, random_state=42)
@@ -45,7 +46,7 @@ df = pd.DataFrame(data, columns=[f"Feature_{i}" for i in range(15)])
 model = FeatureSelection(data=df, shifts=[1, 25, 50, 75, 100], n_jobs=-1, use_gower=False)
 
 # See how the metrics are important
-metrics2 = model2.get_metrics()
+metrics = model.get_metrics()
 
 ```
 
@@ -71,6 +72,12 @@ If you find this inventory optimization tool helpful and would like to support i
 - 🐛 Report issues or suggest new features
 
 Your support, in any form, is greatly appreciated! 🙏
+
+### Contributions
+
+1. Open a issue.
+2. Create a new branch based for solving this.
+3. Send the PR to `dev` to test the inner functionality.
 
 ## 📝 License
 
