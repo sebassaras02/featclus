@@ -118,7 +118,7 @@ class FeatureSelection:
                 scores[col] = np.mean(values)
             return scores
         else:
-            dataframes = self._shift_data_mc(df=self.data)
+            dataframes = self._shift_data_mc()
             results = Parallel(n_jobs=self.n_jobs)(
                 delayed(self._get_score)(df) for _, df in dataframes
             )
@@ -126,22 +126,6 @@ class FeatureSelection:
             for (col, _), score in zip(dataframes, results):
                 scores[col].append(score)
             return {col: np.mean(scores[col]) for col in scores}
-
-    def _process_columns(self, col):
-        """
-        Processes a single column by generating shifted datasets and computing scores.
-
-        Args:
-            col (str): Column name to process.
-
-        Returns:
-            Tuple[str, float]: Column name and its average silhouette score.
-        """
-        df_to_test = self._shift_data(df=self.data, target_column=col)
-        values = []
-        for df in df_to_test:
-            values.append(self._get_score(df=df))
-        return col, np.mean(values)
 
     def _get_score(self, df) -> float:
         """
