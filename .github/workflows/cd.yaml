@@ -46,6 +46,7 @@ jobs:
     name: Build 
     runs-on: ubuntu-latest
     needs: check-if-release
+    if: needs.check-if-release.outputs.should_run == 'true'
 
     permissions:
       contents: read
