@@ -27,10 +27,11 @@ class FeatureSelection:
     The performance of the model is calculated by the silhouette score.
 
     Args:
-        data: pd.DataFrame
-            The data to be used in the model.
-        shifts: List
-            The shifts to be used in the data.
+        data (pd.DataFrame): The data to be used in the model.
+        shifts (List): The shifts to be used in the data.
+        n_jobs (int): Number of parallel jobs to run. Default is 1.
+        model (Pipeline): The clustering pipeline used for scoring.
+        use_gower (bool): Whether to use Gower distance as input for DBSCAN.
 
     Returns:
         pd.DataFrame: A DataFrame with the importance of each feature sorted.
@@ -63,7 +64,14 @@ class FeatureSelection:
         self, df: pd.DataFrame, target_column: str
     ) -> List[pd.DataFrame]:
         """
-        This function creates different dataframes based on different shifts.
+        Creates shifted versions of the dataset for a single column.
+
+        Args:
+            df (pd.DataFrame): Input dataframe.
+            target_column (str): Column to apply the shift on.
+
+        Returns:
+            List[pd.DataFrame]: List of shifted dataframes.
         """
         data_shifted = []
         for value in self.shifts:
@@ -75,7 +83,11 @@ class FeatureSelection:
 
     def _shift_data_mc(self) -> pd.DataFrame:
         """
-        This function creates different dataframes based on different shifts for multi-threading.
+        Generates shifted datasets for all columns, used for multiprocessing.
+
+        Returns:
+            List[Tuple[str, pd.DataFrame]]: List of tuples containing
+            the column name and its corresponding shifted dataframe.
         """
         data_shifted = []
         for col in self.columns:
@@ -90,7 +102,11 @@ class FeatureSelection:
 
     def _train_model(self) -> dict:
         """
-        This function trains a model for each column with a different data shift.
+        Trains the model for each column and computes a silhouette score
+        for each shifted version.
+
+        Returns:
+            dict: Dictionary mapping each column to its average silhouette score.
         """
         if self.n_jobs == 1:
             scores = {}
@@ -113,7 +129,13 @@ class FeatureSelection:
 
     def _process_columns(self, col):
         """
-        This function processes the columns of the data.
+        Processes a single column by generating shifted datasets and computing scores.
+
+        Args:
+            col (str): Column name to process.
+
+        Returns:
+            Tuple[str, float]: Column name and its average silhouette score.
         """
         df_to_test = self._shift_data(df=self.data, target_column=col)
         values = []
@@ -123,7 +145,13 @@ class FeatureSelection:
 
     def _get_score(self, df) -> float:
         """
-        This function calculates the silhouete score for each model created.
+        Calculates the silhouette score for the given dataframe.
+
+        Args:
+            df (pd.DataFrame): Input dataframe.
+
+        Returns:
+            float: Silhouette score for the clustering result.
         """
         if self.use_gower:
             labels = self.model.fit_predict(gower.gower_matrix(df.astype("float64")))
@@ -134,7 +162,11 @@ class FeatureSelection:
 
     def get_metrics(self) -> pd.DataFrame:
         """
-        This function saves the results of the metrics and sorts the results.
+        Computes feature importance based on the difference between
+        shifted and original silhouette scores.
+
+        Returns:
+            pd.DataFrame: Sorted DataFrame of feature importance scores.
         """
         scores_shifted = self._train_model()
         original_score = self._get_score(df=self.data)
@@ -150,7 +182,13 @@ class FeatureSelection:
 
     def plot_results(self, n_features=None):
         """
-        This function plots the results of the model.
+        Plots the feature importance results.
+
+        Args:
+            n_features (int, optional): Number of top features to plot. Defaults to None.
+
+        Returns:
+            None: Displays a Plotly bar chart.
         """
         if self.cache_history == 0:
             self.get_metrics()

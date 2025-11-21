@@ -11,6 +11,7 @@ The feature selection process is driven by evaluating how each feature impacts t
 3. **DBSCAN Clustering**: After reducing the dimensionality, DBSCAN is used to perform clustering.
 4. **Silhouette Score Calculation**: For each feature, we calculate the silhouette score to evaluate the quality of the clusters. The silhouette score represents how similar an object is to its own cluster compared to other clusters.
 5. **Data Shift and Feature Importance**: By applying isolated shifts to each feature and recalculating the silhouette score, we measure how the score changes. The absolute difference in the silhouette score after shifting each feature is used to rank the features by importance.
+6. **Gower matrix**: In case of dealing with categorical variables, please use gower matrix.
 
 This method ensures that the features are evaluated for their individual contribution to the clustering process, allowing you to focus on the most impactful features.
 
@@ -41,7 +42,7 @@ data, labels = make_blobs(n_samples=10000, centers=7, n_features=15, random_stat
 df = pd.DataFrame(data, columns=[f"Feature_{i}" for i in range(15)])
 
 # Initialize the FeatureSelection
-model = FeatureSelection(data=df, shifts=[1, 25, 50, 75, 100], n_jobs=-1)
+model = FeatureSelection(data=df, shifts=[1, 25, 50, 75, 100], n_jobs=-1, use_gower=False)
 
 # See how the metrics are important
 metrics2 = model2.get_metrics()
