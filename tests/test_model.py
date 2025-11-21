@@ -32,7 +32,7 @@ class TestFeatureSelection:
         """
         model = DataShifter()
         shifted_data = model.shifts_single_column(
-            df=data_dummy, target_column="feature_0"
+            df=data_dummy, target_column="feature_0", shifts=[5]
         )[0]
         assert len(shifted_data) == len(data_dummy) - 5
 
@@ -41,8 +41,11 @@ class TestFeatureSelection:
         This test is created to test the functionality of shifting all columns in a dataframe.
         """
         model = DataShifter()
-        result = model.shift_multiple_columns()
-        expected_number_of_shifts = len(data_dummy.columns) * len(model.shifts)
+        shifts = [5, 10]
+        result = model.shift_multiple_columns(
+            df=data_dummy, shifts=shifts, columns=data_dummy.columns
+        )
+        expected_number_of_shifts = len(data_dummy.columns) * len(shifts)
         assert len(result) == expected_number_of_shifts
 
     def test_scoring_normal(self, data_dummy):

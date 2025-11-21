@@ -11,9 +11,9 @@ from sklearn.metrics import silhouette_score
 
 import gower
 
-from data_processing import DataShifter
-from plots import ImportancePlotter
-from parallelizer import FunctionParallizer
+from .data_processing import DataShifter
+from .plots import ImportancePlotter
+from .parallelizer import FunctionParallizer
 
 
 class FeatureSelection:
@@ -81,9 +81,9 @@ class FeatureSelection:
         dataframes = self.data_shifter.shift_multiple_columns(
             df=df, columns=columns, shifts=shifts
         )
-        results = self.parallelizer.hadle(
+        results = self.parallelizer.handle(
             func=self._get_score,
-            iterable=dataframes,
+            iterable=[df for _, df in dataframes],
         )
         scores = {col: [] for col in self.columns}
         for (col, _), score in zip(dataframes, results):
@@ -138,4 +138,4 @@ class FeatureSelection:
         """
         if self.cache_history == 0:
             self.get_metrics()
-        self.plotter.plot_importance(df=self.results, n_features=n_features)
+        self.plotter.plot_metrics(df=self.results, n_features=n_features)
