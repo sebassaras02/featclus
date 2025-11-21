@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "featclus"
-version = "0.1.2"
+version = "0.1.3"
 description = "This library is built to perform feature selection in clustering models"
 readme = "README.md"
 authors = [{ name = "Sebastian Sarasti", email = "sebitas.alejo@hotmail.com" }]
