@@ -73,7 +73,7 @@ class FeatureSelection:
             data_shifted.append(df1)
         return data_shifted
 
-    def _shift_data_mc(self, df: pd.DataFrame) -> pd.DataFrame:
+    def _shift_data_mc(self) -> pd.DataFrame:
         """
         This function creates different dataframes based on different shifts for multi-threading.
         """
