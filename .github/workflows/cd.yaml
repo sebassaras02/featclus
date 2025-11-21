@@ -20,16 +20,24 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       should_run: ${{ steps.check.outputs.should_run }}
+
     steps:
-      - name: Check if PR contains the word RELEASE
+      - name: Check if event contains the word RELEASE
         id: check
         run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            COMMIT_MSG="${{ github.event.head_commit.message }}"
+            echo "COMMIT: $COMMIT_MSG"
 
-          if [ "${{ github.event_name }}" != "pull_request" ]; then
-            echo "should_run=true" >> $GITHUB_OUTPUT
+            if echo "$COMMIT_MSG" | grep -iq "RELEASE"; then
+              echo "should_run=true" >> $GITHUB_OUTPUT
+            else
+              echo "should_run=false" >> $GITHUB_OUTPUT
+            fi
             exit 0
           fi
 
+          # PR event → revisar título y body
           TITLE="${{ github.event.pull_request.title }}"
           BODY="${{ github.event.pull_request.body }}"
 
@@ -75,14 +83,14 @@ jobs:
 
   publish-to-pypi:
     name: Publish
-    needs: 
-      - build
     runs-on: ubuntu-latest
+    needs: build
+    if: needs.build.result == 'success'
     environment:
       name: pypi
-      url: https://pypi.org/project/featclus # Replace <package-name> with your PyPI project name
+      url: https://pypi.org/project/featclus
     permissions:
-      id-token: write  # IMPORTANT: mandatory for trusted publishing
+      id-token: write
     
     steps:
       - name: Download all the dists
@@ -93,4 +101,3 @@ jobs:
 
       - name: Publish distribution 📦 to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
-      
