@@ -25,19 +25,19 @@ jobs:
       - name: Check if event contains the word RELEASE
         id: check
         run: |
+          # ALWAYS set a default
+          echo "should_run=false" >> $GITHUB_OUTPUT
+
           if [ "${{ github.event_name }}" = "push" ]; then
             COMMIT_MSG="${{ github.event.head_commit.message }}"
             echo "COMMIT: $COMMIT_MSG"
 
             if echo "$COMMIT_MSG" | grep -iq "RELEASE"; then
               echo "should_run=true" >> $GITHUB_OUTPUT
-            else
-              echo "should_run=false" >> $GITHUB_OUTPUT
             fi
             exit 0
           fi
 
-          # PR event → revisar título y body
           TITLE="${{ github.event.pull_request.title }}"
           BODY="${{ github.event.pull_request.body }}"
 
@@ -46,8 +46,6 @@ jobs:
 
           if echo "$TITLE $BODY" | grep -iq "RELEASE"; then
             echo "should_run=true" >> $GITHUB_OUTPUT
-          else
-            echo "should_run=false" >> $GITHUB_OUTPUT
           fi
 
   build:
