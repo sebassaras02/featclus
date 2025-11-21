@@ -15,6 +15,7 @@ from joblib import Parallel, delayed
 import plotly.express as px
 import gower
 
+
 class FeatureSelection:
     """
     This library perforns feature selection for clustering problems.
@@ -35,13 +36,20 @@ class FeatureSelection:
         pd.DataFrame: A DataFrame with the importance of each feature sorted.
     """
 
-    def __init__(self, data: pd.DataFrame, shifts: List = [5, 10, 50], n_jobs: int = 1, model: Pipeline = Pipeline(
+    def __init__(
+        self,
+        data: pd.DataFrame,
+        shifts: List = [5, 10, 50],
+        n_jobs: int = 1,
+        model: Pipeline = Pipeline(
             steps=[
                 ("scaler", MinMaxScaler()),
                 ("pca", PCA(0.8)),
                 ("clustering", DBSCAN()),
-            ]),
-            use_gower: bool = False):
+            ]
+        ),
+        use_gower: bool = False,
+    ):
         self.data = data
         self.shifts = shifts
         self.model = model
@@ -118,7 +126,7 @@ class FeatureSelection:
         This function calculates the silhouete score for each model created.
         """
         if self.use_gower:
-            labels = self.model.fit_predict(gower.gower_matrix(df.astype('float64')))
+            labels = self.model.fit_predict(gower.gower_matrix(df.astype("float64")))
         else:
             labels = self.model.fit_predict(df)
         score = silhouette_score(X=df, labels=labels)
