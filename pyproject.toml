@@ -24,7 +24,13 @@ dependencies = [
     "nbformat==5.10.4",
     "gower==0.1.2"
 ]
-requires-python = ">=3.12.4"
+requires-python = ">=3.12.1"
 
 [project.urls]
 Homepage = "https://github.com/sebassaras02/featclus"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
